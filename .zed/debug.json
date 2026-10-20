@@ -1,0 +1,12 @@
+[
+  {
+    "adapter": "JavaScript",
+    "label": "Node",
+    "request": "launch",
+    "type": "pwa-node",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "program": "$ZED_FILE",
+    "runtimeArgs": ["--disable-warning=ExperimentalWarning", "--experimental-transform-types"],
+    "attachSimplePort": 9229,
+  },
+]

@@ -1,0 +1,7 @@
+# npm uses this file instead of .gitignore. dist/ is build output and must ship.
+test
+.zed
+.github
+eslint.config.js
+tsconfig.json
+tsconfig.build.json

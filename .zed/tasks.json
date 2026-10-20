@@ -1,0 +1,7 @@
+[
+  {
+    "label": "node test",
+    "command": "node --disable-warning=ExperimentalWarning --experimental-transform-types --test $ZED_FILE",
+    "tags": ["js-test"],
+  },
+]

@@ -1,0 +1,49 @@
+{
+  "lsp": {
+    "json-language-server": {
+      "settings": {
+        "json": {
+          "schemas": [
+            {
+              "fileMatch": ["package.json"],
+              "url": "https://www.schemastore.org/package",
+            },
+            {
+              "fileMatch": ["tsconfig.json"],
+              "url": "https://www.schemastore.org/tsconfig",
+            },
+          ],
+        },
+      },
+    },
+  },
+  "languages": {
+    "JavaScript": {
+      "language_servers": ["eslint", "typescript-language-server", "!deno", "!vtsls"],
+      "prettier": { "allowed": false },
+      "formatter": [],
+      "code_actions_on_format": {
+        "source.fixAll.eslint": true,
+      },
+      "format_on_save": "on",
+    },
+    "TypeScript": {
+      "language_servers": ["eslint", "typescript-language-server", "!deno", "!vtsls"],
+      "prettier": { "allowed": false },
+      "formatter": [],
+      "code_actions_on_format": {
+        "source.fixAll.eslint": true,
+      },
+      "format_on_save": "on",
+    },
+    "TSX": {
+      "language_servers": ["eslint", "typescript-language-server", "!deno", "!vtsls"],
+      "prettier": { "allowed": false },
+      "formatter": [],
+      "code_actions_on_format": {
+        "source.fixAll.eslint": true,
+      },
+      "format_on_save": "on",
+    },
+  },
+}
