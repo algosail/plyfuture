@@ -29,7 +29,7 @@ import {
   SwapTransformation,
 } from './transformation.ts'
 export type { Cancel } from './interpreter.ts'
-export { ConcurrentFuture, Par, seq } from './concurrent.ts'
+export { ConcurrentFuture, seq } from './concurrent.ts'
 export type {
   ConcurrentFutureShape,
   ConcurrentFutureTypeRep,

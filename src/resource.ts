@@ -12,10 +12,6 @@ export class Hook<E, R, F, A, D> extends Future<E | F, A> {
     super ()
   }
 
-  override toString(): string {
-    return 'hook'
-  }
-
   _interpret(
     onCrash: (e: unknown) => void,
     onRejected: (e: E | F) => void,

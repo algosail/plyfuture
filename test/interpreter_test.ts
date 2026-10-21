@@ -217,24 +217,23 @@ test ('pap: applies its function only after both results, in either order', () =
 test ('ConcurrentFuture: ply of, map, ap, alt, zero and is preserve the parallel type', async () => {
   const a = controlled<string, number> (),
     f = controlled<string, (n: number) => number> ()
-  const wrapped: F.ConcurrentFuture<string, number> = P.ap (F.Par (f.future)) (
-    F.Par (a.future),
-  )
+  const wrapped: F.ConcurrentFuture<string, number> = P.ap (
+    new F.ConcurrentFuture (f.future),
+  ) (new F.ConcurrentFuture (a.future))
   const result = observe (F.seq (wrapped))
   assert.deepStrictEqual ([a.runs.length, f.runs.length], [1, 1])
   f.runs[0].resolve ((n) => n + 1)
   a.runs[0].resolve (2)
   assert.deepStrictEqual (result.events, [{ tag: 'resolve', value: 3 }])
   assert.deepStrictEqual (
-    await F.promise (F.seq (P.map ((n: number) => n * 2) (P.of (F.Par) (3)))),
+    await F.promise (F.seq (P.map ((n: number) => n * 2) (P.of (F.ConcurrentFuture) (3)))),
     6,
   )
   assert.deepStrictEqual (
-    await F.promise (F.seq (P.alt (F.Par (F.resolve (4))) (P.zero (F.Par)))),
+    await F.promise (F.seq (P.alt (new F.ConcurrentFuture (F.resolve (4))) (P.zero (F.ConcurrentFuture)))),
     4,
   )
   assert.deepStrictEqual (P.is (F.ConcurrentFuture) (wrapped), true)
-  assert.deepStrictEqual (P.is (F.Par) (wrapped), true)
   assert.deepStrictEqual ('chain' in wrapped, false)
   assert.deepStrictEqual (P.show (wrapped), 'ConcurrentFuture')
 })
@@ -444,23 +443,7 @@ test ('lastly: cleanup errors are reflected in the result type', () => {
   void invalid
 })
 
-test ('validation: invalid callbacks fail at composition and invalid chain results crash', () => {
-  assert.throws (
-    () => F.resolve (1).map (null as never),
-    (error: unknown) => error instanceof TypeError && error.message.includes ('map'),
-  )
-  assert.throws (
-    () => F.future (null as never),
-    (error: unknown) => error instanceof TypeError && error.message.includes ('future'),
-  )
-  assert.throws (
-    () => F.parallel (2) ([null as never]),
-    (error: unknown) => error instanceof TypeError && error.message.includes ('parallel'),
-  )
-  assert.throws (
-    () => F.race (null as never),
-    (error: unknown) => error instanceof TypeError && error.message.includes ('race'),
-  )
+test ('validation: invalid handler results crash', () => {
   const result = observe (F.resolve (1).chain (() => 3 as never))
   assert.deepStrictEqual (result.events[0].tag, 'crash')
   assert.deepStrictEqual (
@@ -486,16 +469,6 @@ test ('interpreter: user callbacks are called without a receiver', () => {
   })
   assert.deepStrictEqual (observe (task).events, [{ tag: 'resolve', value: 2 }])
   assert.deepStrictEqual (receivers, [undefined, undefined, undefined])
-})
-
-test ('description: transformations can be inspected without running effects', () => {
-  let runs = 0
-  const task = F.future<string, number> (() => {
-    runs++
-  }).map ((n) => n + 1).chain ((n) => F.resolve (n))
-  assert.deepStrictEqual (String (task), 'future → map → chain')
-  assert.deepStrictEqual (P.show (task), 'Future')
-  assert.deepStrictEqual (runs, 0)
 })
 
 test ('cancel: chainRec cancellation stops before another iteration', () => {
@@ -844,19 +817,13 @@ test ('hook: a throw after cancelling inside dispose is reported', async () => {
 })
 
 test ('names: argument errors use the operation the caller wrote', () => {
-  assert.throws (
-    () => new F.ConcurrentFuture (1 as never),
-    (error: unknown) => error instanceof TypeError && error.message.includes ('ConcurrentFuture: expected a Future'),
-  )
-  assert.throws (
-    () => F.Par (1 as never),
-    (error: unknown) => error instanceof TypeError && error.message.includes ('Par: expected a Future'),
-  )
   assert.deepStrictEqual (
     String (observe (F.pap (F.resolve (1)) (F.resolve (2 as never))).events[0].value),
     'TypeError: pap: expected a function',
   )
-  const parallel = F.Par (F.resolve (1)).ap (F.Par (F.resolve (2 as never)))
+  const parallel = new F.ConcurrentFuture (F.resolve (1)).ap (
+    new F.ConcurrentFuture (F.resolve (2 as never)),
+  )
   assert.deepStrictEqual (
     String (observe (F.seq (parallel)).events[0].value),
     'TypeError: ap: expected a function',

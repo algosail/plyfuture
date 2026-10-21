@@ -149,7 +149,6 @@ export abstract class Future<E, A> implements FutureMethods<E, A> {
   }
 
   map<B>(f: (a: A) => B): Future<E, B> {
-
     return this._transform (new MapTransformation (f))
   }
 

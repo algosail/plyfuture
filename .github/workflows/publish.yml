@@ -1,0 +1,37 @@
+name: Publish
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: npm-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          check-latest: true
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+      - name: Install npm with trusted publishing
+        run: npm install --global npm@^11.5.1
+      - run: npm ci
+      - run: npm test
+      - name: Publish if this version is not on npm
+        run: |
+          spec=$(node --input-type=module -e 'import {readFileSync} from "node:fs"; const pkg = JSON.parse(readFileSync("package.json", "utf8")); process.stdout.write(`${pkg.name}@${pkg.version}`)')
+          if npm view "$spec" version >/dev/null 2>&1; then
+            echo "$spec is already published"
+            exit 0
+          fi
+          npm publish

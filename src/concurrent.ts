@@ -12,7 +12,7 @@ import type {
 } from '@algosail/ply/define'
 import { Future, Never, Parallel, Raced } from './future.ts'
 
-/** Pass `Par` to ply when `ap` and `alt` should run in parallel. */
+/** Pass `ConcurrentFuture` to ply when `ap` and `alt` should run in parallel. */
 export interface ConcurrentFutureShape extends Shape<'ConcurrentFuture'> {
   readonly out: ConcurrentFuture<this['slotB'], this['slotA']>
 }
@@ -24,7 +24,7 @@ export interface ConcurrentFutureStatics {
   zero<E, A>(): ConcurrentFuture<E, A>
 }
 
-/** The `Par` value ply accepts as a type representative. */
+/** The `ConcurrentFuture` value ply accepts as a type representative. */
 export type ConcurrentFutureTypeRep = Satisfies<
   ConcurrentFutureStatics & Shaped<ConcurrentFutureShape>,
   & ApplicativeTypeRep<ConcurrentFutureShape, unknown>
@@ -32,7 +32,19 @@ export type ConcurrentFutureTypeRep = Satisfies<
   & CheckableTypeRep<ConcurrentFutureShape>
 >
 
-/** A task whose `ap` runs in parallel and whose `alt` races. */
+/**
+ * A task whose `ap` runs in parallel and whose `alt` races.
+ * @example
+ * ```ts
+ * import * as P from '@algosail/ply'
+ * import { after, ConcurrentFuture, promise, seq } from '@algosail/plyfuture'
+ *
+ * const result = P.ap (new ConcurrentFuture (after (1) ((n: number) => n * 2))) (
+ *   new ConcurrentFuture (after (1) (3)),
+ * )
+ * await promise (seq (result)) // => 6
+ * ```
+ */
 export class ConcurrentFuture<E, A>
   implements
     FunctorMethods<ConcurrentFuture<E, A>, A, E>,
@@ -62,7 +74,7 @@ export class ConcurrentFuture<E, A>
 
   readonly sequential: Future<E, A>
 
-  constructor(sequential: Future<E, A>, name = 'ConcurrentFuture') {
+  constructor(sequential: Future<E, A>) {
     this.sequential = sequential
   }
 
@@ -97,35 +109,13 @@ export function parallelApply<E, A, B>(
   name: string,
 ): Future<E, B> {
   return new Parallel<E, unknown> ([ff, fa], 2, name)
-    .map (([f, a]) => (f as (a: A) => B) (a as A))
+    .map (([f, a]) => {
+      if (typeof f !== 'function') {
+        throw new TypeError (`${name}: expected a function`)
+      }
+      return (f as (a: A) => B) (a as A)
+    })
 }
-
-/**
- * Wraps a task so ply's `ap` runs in parallel and `alt` races.
- * @example
- * ```ts
- * import * as P from '@algosail/ply'
- * import { after, Par, promise, seq } from '@algosail/plyfuture'
- *
- * const result = P.ap (Par (after (1) ((n: number) => n * 2))) (Par (after (1) (3)))
- * await promise (seq (result)) // => 6
- * ```
- */
-export const Par = Object.assign (
-  function Par<E, A>(future: Future<E, A>): ConcurrentFuture<E, A> {
-    return new ConcurrentFuture (future, 'Par')
-  },
-  {
-    '@@type': 'ConcurrentFuture' as const,
-    is: ConcurrentFuture.is,
-    of: ConcurrentFuture.of,
-    zero: ConcurrentFuture.zero,
-  },
-) as typeof ParConstructor & ConcurrentFutureTypeRep
-
-declare function ParConstructor<E, A>(
-  future: Future<E, A>,
-): ConcurrentFuture<E, A>
 
 /** Unwraps a parallel task so it can be forked or passed to `promise`. */
 export function seq<E, A>(future: ConcurrentFuture<E, A>): Future<E, A> {
